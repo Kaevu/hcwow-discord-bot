@@ -12,8 +12,9 @@ import type {
 }  from 'discord.js'
 
 import { createCemeteryEmbed} from '../embeds/charTracker.js'
-import { savedQueries } from '../database/queries.js';
+import { insertToonAPI } from '../database/queries.js';
 import { db } from '../database/db.js';
+import { getValidParsedToon } from '../api/blizzard.js'
 
 
 export function setupInteractions(client: Client) {
@@ -53,13 +54,17 @@ export function setupInteractions(client: Client) {
         }
         if (interaction.isModalSubmit()) {
             if(interaction.customId === 'addModal'){
-                const toonName = interaction.fields.getTextInputValue('toonNameInput')
-                console.log(toonName);
-                savedQueries.insertToon.run(toonName,5,interaction.user.id,'Paladin');
-                // Call blizzard api to check for valid toon
+                const toonName = (interaction.fields.getTextInputValue('toonNameInput')).toLowerCase();
                 await interaction.deferReply({ephemeral:true});
-                // await interaction.editReply({ content: `Added character: ${result.name} ✅` });
-                // await interaction.editReply({ content: `Error: Could not add character: ${result.name} ❌` });
+                // console.log(toonName);
+                // savedQueries.insertToon.run(toonName,5,interaction.user.id,'Paladin');
+                let toonData = await getValidParsedToon(toonName);
+                if (!toonData) {
+                    await interaction.editReply({ content: `Error: Could not add character: ${toonName} ❌` });
+                } else {
+                    await insertToonAPI(toonData,interaction.user.id);
+                    await interaction.editReply({ content: `Added character: ${toonName} ✅` });
+                }
             }
             
         }

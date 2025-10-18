@@ -3,14 +3,33 @@ import 'dotenv/config';
 import { createCharEmbed} from './embeds/charTracker.js'
 import { createCharButtons } from './components/button.js';
 import { setupInteractions } from './handlers/interactions.js';
+import cron from 'node-cron';
 
 import { dbInit } from './database/db.js';
 dbInit();
 
-import { savedQueries } from './database/queries.js';
-savedQueries.insertToon.run('TestChar', 45, '123456', 'Warrior')
-const alive = savedQueries.getAllAlive.all()
-console.log(alive)
+import { batchUpdate } from './api/blizzard.js';
+import { getTrackedToons, savedQueries } from './database/queries.js';
+
+cron.schedule('0 * * * *', async() => {
+    console.log('Running Scheduled batchUpdate...');
+    try {
+        await batchUpdate();
+        console.log('batchUpdate completed successfully.');
+    } catch (err) {
+        console.error('Error running batchUpdate:', err);
+    }
+});
+// // let rows = savedQueries.testAll.all();
+// // console.log(db.prepare("SELECT * FROM characters WHERE name = ?").get("Beeni"));
+// // const resetDeathTimes = db.prepare('UPDATE characters SET death_time = NULL');
+// // resetDeathTimes.run();
+
+// // savedQueries.updateToon.run(14,1,'Beeni');
+// let yaga = batchUpdate();
+console.log(getTrackedToons());
+
+
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const token = process.env.DISCORD_TOKEN!;
 const buttons = createCharButtons();

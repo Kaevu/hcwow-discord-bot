@@ -7,7 +7,7 @@ export function dbInit(){
 db.exec(`
     CREATE TABLE IF NOT EXISTS characters(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        name TEXT UNIQUE NOT NULL,
         level INTEGER,
         owner_id TEXT NOT NULL,
         class TEXT NOT NULL,
