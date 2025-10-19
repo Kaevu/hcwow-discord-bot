@@ -11,10 +11,15 @@ import type {
     ModalActionRowComponentBuilder
 }  from 'discord.js'
 
-import { createCemeteryEmbed} from '../embeds/charTracker.js'
-import { insertToonAPI } from '../database/queries.js';
-import { db } from '../database/db.js';
+import { buildCemeteryEmbed } from '../embeds/charTracker.js'
+import { deleteToonDB, insertToonAPI } from '../database/queries.js';
 import { getValidParsedToon } from '../api/blizzard.js'
+import { refreshCharEmbed } from '../index.js'
+
+export type dbResult = {
+    changes:number;
+    lastInsertRowid:number;
+};
 
 
 export function setupInteractions(client: Client) {
@@ -45,7 +50,7 @@ export function setupInteractions(client: Client) {
                 await interaction.showModal(modal)
             }
             if (interaction.customId === 'viewDead'){
-                const cemetery = createCemeteryEmbed()
+                const cemetery = await buildCemeteryEmbed(client);
                 await interaction.reply({
                     embeds: [cemetery],
                     ephemeral: true
@@ -62,11 +67,26 @@ export function setupInteractions(client: Client) {
                 if (!toonData) {
                     await interaction.editReply({ content: `Error: Could not add character: ${toonName} ❌` });
                 } else {
-                    await insertToonAPI(toonData,interaction.user.id);
+                    const result = await insertToonAPI(toonData,interaction.user.id);
+                    if (result && result.error) {
+                        await interaction.editReply({ content: `Error: ${result.error} ❌` });
+                        return;
+                    }
+                    await refreshCharEmbed(client);
                     await interaction.editReply({ content: `Added character: ${toonName} ✅` });
                 }
             }
-            
+            if(interaction.customId === 'deleteModal'){
+                const toonName = (interaction.fields.getTextInputValue('toonNameInput'))
+                await interaction.deferReply({ephemeral:true});
+                let result = deleteToonDB(toonName) as dbResult;
+                if (result.changes === 1){
+                    await interaction.editReply("Character deleted successfully");
+                    await refreshCharEmbed(client);
+                } else {
+                    await interaction.editReply("No Character found")
+                }
+            }
         }
 })
 }

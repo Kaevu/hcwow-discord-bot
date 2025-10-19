@@ -1,7 +1,7 @@
 import { db, dbInit } from './db.js'
 import Database from "better-sqlite3";
 import type { ParsedToon } from '../api/blizzard.js';
-import { getActiveResourcesInfo } from 'process';
+import type { dbResult } from '../handlers/interactions.js';
 
 dbInit();
 
@@ -34,7 +34,16 @@ export const savedQueries : SavedQueries = {
 };
 
 export function insertToonAPI( toonData: ParsedToon,id: string ) {
-    savedQueries.insertToon.run(toonData.name,toonData.level,id,toonData.class,toonData.is_alive ? 1 : 0)
+    try{
+        savedQueries.insertToon.run(toonData.name,toonData.level,id,toonData.class,toonData.is_alive ? 1 : 0);
+        return null
+    } catch (error:any) {
+        if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+            return { error: `A character named **${toonData.name}** already exists.` };
+        }
+        console.error("DB Error:", error);
+        return { error: "An unexpected database error occurred." };
+    }
 }
 
 export function getCemeteryToons() {
@@ -45,4 +54,9 @@ export function getCemeteryToons() {
 export function getTrackedToons() {
     const alive = savedQueries.getAllAlive.all()
     return alive;
+}
+
+export function deleteToonDB(name:string): dbResult {
+    let result = savedQueries.deleteToon.run(name) as dbResult;
+    return result;
 }
