@@ -25,26 +25,33 @@ const classEmojis: Record<string,string> = {
 }
 
 
+
 export function createCharEmbed(groupedToons: Map<string, { username: string, toons: any[] }>) {
     const totalChars = Array.from(groupedToons.values())
         .reduce((sum, { toons }) => sum + toons.length, 0);
     const totalPlayers = groupedToons.size;
+   
     const embed = new EmbedBuilder()
         .setTitle('⚔️ Active Hardcore Characters')
-        .setDescription(`👥 ${totalPlayers} Players • 🎮 ${totalChars} Characters`)
+        .setDescription(`**Active Players:** ${totalPlayers}  |  **Characters:** ${totalChars}`)
         .setColor('#DC143C')
-        .setFooter({ text:"Last Updated"})
+        .setFooter({ text: "Last Updated" })
         .setTimestamp();
-
-  for (const [ownerId, { username, toons }] of groupedToons) {
-    const toonList = toons
-      .map(t => `${classEmojis[t.class] || ""} Lvl ${t.level} • ${t.name}`)
-      .join('\n');
-
-    embed.addFields({ name: `👤 ${username} (${toons.length})`, value: toonList, inline: false });
-  }
-
-  return embed;
+   
+    for (const [ownerId, { username, toons }] of groupedToons) {
+        const toonList = toons
+            .map(t => `${classEmojis[t.class] || ""} Lvl ${t.level} • ${t.name}`)
+            .join('\n');
+       
+        embed.addFields({
+            name: `👤 ${username} (${toons.length})`,
+            value: `─────────────────\n${toonList}`,
+            inline: true
+        });
+       
+    }
+   
+    return embed;
 }
 
 
